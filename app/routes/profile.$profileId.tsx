@@ -244,7 +244,7 @@ export default function Index() {
                   <th className="w-1/5 py-2"># kamper</th>
                   <th className="w-1/5 py-2"># seiere</th>
                   <th className="w-1/5 py-2"># tap</th>
-                  <th className="w-2/5 py-2"># overlegenhet</th>
+                  <th className="w-2/5 py-2">% overlegenhet</th>
                 </tr>
               </thead>
               <tbody>
