@@ -37,6 +37,10 @@ RUN npx prisma generate
 ADD . .
 RUN npm run build
 
+# Run migrations
+ARG DATABASE_URL
+RUN npm run deploy:db
+
 # Finally, build the production image with minimal footprint
 FROM base
 
