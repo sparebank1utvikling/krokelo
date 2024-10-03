@@ -1,49 +1,42 @@
-# Welcome to Remix!
+# Welcome to [Krokelo](https://krokelo.sb1u.no/)!
 
-- [Remix Docs](https://remix.run/docs)
+Krokelo is a web application created to track [Crocinole](https://en.wikipedia.org/wiki/Crokinole) games at SpareBank 1 Utvikling. You can submit duel games (1 vs 1) and team games (2 vs 2), and the application will calculate [Elo ratings](https://en.wikipedia.org/wiki/Elo_rating_system) for players and teams. Leaderboard and profile pages shows the current stats.
 
-## Possible Todos
-
-- [ ] Make it possible for players to be anonymous at stats and profile page.
-- [ ] Match history for players
-- [ ] Heat map for time of matches
+The application is implemented in [Remix](https://remix.run/docs) with a [Postgres](https://en.wikipedia.org/wiki/PostgreSQL) database.
 
 ## Development
 
-From your terminal:
+### Spin up a Postgres dataabse
 
 ```sh
-npm run dev
+docker run --name postgres16 -e POSTGRES_DB=krokelo -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=666 -p 5432:5432 -d postgres:16
 ```
 
-This starts your app in development mode, rebuilding assets on file changes.
+### Create a .env file with required environment variables
 
-## Local db setup
+```
+DATABASE_URL="postgresql://postgres:666@localhost:5432/krokelo"
+COOKIE_SECRET="s3cr3ts3cr3t"
+```
 
-To run the app locally first you need a database to connect to.
+### Start app in development mode
 
-### Spin up the postgres database image
+```sh
+npm install             # Install dependencies
+npm run setup:db        # Setup Prisma and migrate database
+npm run dev             # Start app in dev mode with hot reload
+```
 
-`docker run --name postgres16 -e POSTGRES_DB=railway -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=666 -p 5432:5432 -d postgres:16`
-
-### Add a .env file locally to define the DATABASE_URL
-
-`DATABASE_URL="postgresql://postgres:666@localhost:5432/railway"`
-
-### Use prod data in local dev
+### (Optional) Use prod data in local dev
 
 There is a backup of the production data included in this project in the db_backups folder.
 You can use this to get a more realistic dev env.
 You can restore the backup data to your local db instance in pgadmin4 or via terminal:
 
 ```sh
-docker cp db_backups/10feb2024.sql {container_id}:/10feb2024.sql
-docker exec -i postgres16 pg_restore -U postgres -d railway 10feb2024.sql
+docker cp db_backups/03oct2024.dump {container_id}:/03oct2024.dump
+docker exec -i postgres16 pg_restore --clean --no-owner --no-privileges -U postgres -d krokelo 03oct2024.dump
 ```
-
-### Run prisma migration
-
-`npm run setup:db`
 
 ## Deployment
 
@@ -59,13 +52,13 @@ Then run the app in production mode:
 npm start
 ```
 
-Now you'll need to pick a host to deploy it to.
+### Cheat sheet commands for database backup and restore
 
-### DIY
-
-If you're familiar with deploying node applications, the built-in Remix app server is production-ready.
-
-Make sure to deploy the output of `remix build`
-
-- `build/`
-- `public/build/`
+```sh
+# Backup database
+pg_dump -Fc "postgresql://username:password@host:port/dbname" > db.dump
+# Restore database (same owner and roles)
+pg_restore --verbose -d dbname db.dump -h host -p port -U username
+# Restore database (new owners and roles)
+pg_restore --verbose --no-owner --role=username -d dbname db.dump -h host -p port -U username
+```
