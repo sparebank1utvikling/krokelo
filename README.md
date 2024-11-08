@@ -10,6 +10,7 @@ The application is implemented in [Remix](https://remix.run/docs) with a [Postgr
 
 ```sh
 docker run --name postgres16 -e POSTGRES_DB=krokelo -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=666 -p 5432:5432 -d postgres:16
+docker run --restart always --publish=7474:7474 --publish=7687:7687 --env NEO4J_AUTH=neo4j/your_password -d neo4j:5.23.0
 ```
 
 ### Create a .env file with required environment variables

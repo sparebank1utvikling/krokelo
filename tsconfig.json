@@ -18,5 +18,5 @@
     "target": "ES2022",
   },
   "exclude": ["node_modules"],
-  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx", "scripts/migrate-pg-to-neo4j.js"],
 }

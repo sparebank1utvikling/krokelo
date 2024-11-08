@@ -1,0 +1,19 @@
+services:
+  krokelo:
+    build: .
+    volumes:
+      - /etc/pki/ca-trust/extracted/pem/:/usr/local/share/ca-certificates/
+    network_mode: bridge
+    links:
+      - pg-db
+
+  pg-db:
+    image: postgres:16-alpine
+    network_mode: bridge
+    container_name: pg-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 666
+      POSTGRES_DB: krokelo
+    ports:
+      - "5432:5432"

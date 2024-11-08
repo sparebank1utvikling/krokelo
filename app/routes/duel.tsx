@@ -13,7 +13,8 @@ import {
   calculateNewELOs,
   logIndividualELO,
 } from '../services/player-service';
-import { record1v1Match } from '../services/match-service';
+import { findOrCreatePlayer } from '../services/player-service-neo4j';
+import { record1v1Match } from '../services/match-service-neo4j';
 import { PageContainerStyling } from './team-duel';
 import CreatableSelect from 'react-select/creatable';
 import { createFilter } from 'react-select';
@@ -70,36 +71,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const player1 =
-      (await findPlayerByName(player1Name)) ||
-      (await createPlayer(player1Name));
+    const player1 = await findOrCreatePlayer(player1Name);
+    const player2 = await findOrCreatePlayer(player2Name);
 
-    const player2 =
-      (await findPlayerByName(player2Name)) ||
-      (await createPlayer(player2Name));
-
-    const player1IsWinner =
-      player1Name.trim().toLowerCase() === winner.trim().toLowerCase();
-
-    const { newELOPlayer1, newELOPlayer2 } = calculateNewELOs(
-      player1.currentELO,
-      player2.currentELO,
-      player1IsWinner
-    );
+    const player1IsWinner = player1Name === winner;
 
     const winnerId = player1IsWinner ? player1.id : player2.id;
     const loserId = player1IsWinner ? player2.id : player1.id;
 
-    const match = await record1v1Match(
-      winnerId,
-      loserId,
-      player1IsWinner ? newELOPlayer1 : newELOPlayer2,
-      player1IsWinner ? newELOPlayer2 : newELOPlayer1
-    );
-    await updatePlayerELO(player1.id, newELOPlayer1);
-    await logIndividualELO(player1.id, newELOPlayer1, match.id); // Log the new ELO for player 1
-    await updatePlayerELO(player2.id, newELOPlayer2);
-    await logIndividualELO(player2.id, newELOPlayer2, match.id); // Log the new ELO for player 2
+    const match = await record1v1Match(winnerId, loserId);
   } catch (err) {
     console.error(err);
   }

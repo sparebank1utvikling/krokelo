@@ -1,18 +1,19 @@
 import { useFetcher } from '@remix-run/react';
-import { getPlayers } from '~/services/player-service';
-import {
-  getRecent1v1Matches,
-  revertLatest1v1Match,
-} from '~/services/match-service';
+import { getPlayers as getPlayersNeo4j } from '~/services/player-service-neo4j';
+import { revertLatest1v1Match } from '~/services/match-service';
+import { getRecent1v1Matches as getRecent1v1MatchesNeo4j } from '~/services/match-service-neo4j';
 import { PageContainerStyling } from './team-duel';
 import { typedjson, useTypedLoaderData } from 'remix-typedjson';
 import { BASE_ELO } from '~/utils/constants';
 
 export const loader = async () => {
-  const players = await getPlayers();
-  const recent1v1Matches = await getRecent1v1Matches(5);
+  const playersNeo4j = await getPlayersNeo4j();
+  const recent1v1MatchesNeo4j = await getRecent1v1MatchesNeo4j(5);
 
-  return typedjson({ players, recent1v1Matches });
+  return typedjson({
+    playersNeo4j,
+    recent1v1MatchesNeo4j,
+  });
 };
 
 export const action = async () => {
@@ -34,9 +35,10 @@ const getRowHighlightClass = (idx: number, matchDate: Date) =>
 
 export default function Index() {
   const fetcher = useFetcher();
-  const { players, recent1v1Matches } = useTypedLoaderData<typeof loader>();
+  const { playersNeo4j, recent1v1MatchesNeo4j } =
+    useTypedLoaderData<typeof loader>();
 
-  const rankedPlayersSortedOnELODesc = [...players]
+  const rankedPlayersSortedOnELODesc = [...playersNeo4j]
     .filter((a) => a.currentELO !== BASE_ELO)
     .sort((p1, p2) => p2.currentELO - p1.currentELO);
 
@@ -57,13 +59,13 @@ export default function Index() {
               </tr>
             </thead>
             <tbody>
-              {recent1v1Matches.map((match, idx) => (
+              {recent1v1MatchesNeo4j.map((match, idx) => (
                 <tr
                   key={match.id}
-                  className={`border-b dark:border-gray-600 ${getRowHighlightClass(idx, match.date)}`}
+                  className={`border-b dark:border-gray-600 ${getRowHighlightClass(idx, match.createdDatetime)}`}
                 >
                   <td className="py-2 dark:text-white">
-                    {match.date.toLocaleString('no-NO', {
+                    {match.createdDatetime.toLocaleString('no-NO', {
                       day: '2-digit',
                       month: 'short',
                       hour: '2-digit',
@@ -91,7 +93,7 @@ export default function Index() {
                   </td>
                   <td>
                     {isLatestMatch(idx) &&
-                      isMatchLessThan5MinutesOld(match.date) && (
+                      isMatchLessThan5MinutesOld(match.createdDatetime) && (
                         <button
                           onClick={() => fetcher.submit({}, { method: 'post' })}
                           className="mx-4 rounded bg-blue-600 px-2 py-1 font-bold text-white hover:bg-blue-700 dark:bg-purple-600 dark:hover:bg-purple-800"
@@ -124,9 +126,7 @@ export default function Index() {
           <tbody>
             {rankedPlayersSortedOnELODesc
               .filter(
-                (a) =>
-                  a.matchesAsWinner.length + a.matchesAsLoser.length > 4 &&
-                  !a.inactive
+                (a) => a.nbMatchesWon + a.nbMatchesLost > 4 && !a.inactive
               )
               .map((player) => (
                 <tr
@@ -137,11 +137,11 @@ export default function Index() {
                     {player.name}
                   </td>
                   <td className="py-2 dark:text-white">
-                    {`${player.matchesAsWinner.length}` +
+                    {`${player.nbMatchesWon}` +
                       (player.winStreak > 0 ? ` (${player.winStreak})` : '')}
                   </td>
                   <td className="py-2 dark:text-white">
-                    {player.matchesAsLoser.length}
+                    {player.nbMatchesLost}
                   </td>
                   <td className="py-2 dark:text-white">{player.currentELO}</td>
                 </tr>
@@ -162,9 +162,7 @@ export default function Index() {
             </tr>
             {rankedPlayersSortedOnELODesc
               .filter(
-                (a) =>
-                  a.matchesAsWinner.length + a.matchesAsLoser.length <= 4 &&
-                  !a.inactive
+                (a) => a.nbMatchesWon + a.nbMatchesLost <= 4 && !a.inactive
               )
               .map((player) => (
                 <tr
@@ -175,11 +173,11 @@ export default function Index() {
                     {player.name}
                   </td>
                   <td className="py-2 dark:text-white">
-                    {`${player.matchesAsWinner.length}` +
+                    {`${player.nbMatchesWon}` +
                       (player.winStreak > 0 ? ` (${player.winStreak})` : '')}
                   </td>
                   <td className="py-2 dark:text-white">
-                    {player.matchesAsLoser.length}
+                    {player.nbMatchesLost}
                   </td>
                   <td></td>
                 </tr>
@@ -210,10 +208,10 @@ export default function Index() {
                     {player.name}
                   </td>
                   <td className="py-2 dark:text-white">
-                    {`${player.matchesAsWinner.length}`}
+                    {`${player.nbMatchesWon}`}
                   </td>
                   <td className="py-2 dark:text-white">
-                    {player.matchesAsLoser.length}
+                    {player.nbMatchesLost}
                   </td>
                   <td className="py-2 dark:text-white">{player.currentELO}</td>
                 </tr>
