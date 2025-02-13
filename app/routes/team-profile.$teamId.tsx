@@ -35,10 +35,24 @@ export default function Index() {
   );
   const topFiveTeamIds = teamsSortedOnELODesc.slice(0, 5).map((t) => t.id);
 
-  const teamOptions = teams.map((team) => ({
-    value: team.id,
-    label: team.name,
-  }));
+  const teamOptions = teams
+    .sort((a, b) => {
+      // Sort teams with inactive players to the bottom
+      const aHasInactive = a.players.some((player) => player.inactive);
+      const bHasInactive = b.players.some((player) => player.inactive);
+      if (aHasInactive && !bHasInactive) return 1;
+      if (!aHasInactive && bHasInactive) return -1;
+      // Then sort by number of games
+      const aMatches =
+        a.teamMatchesAsWinner.length + a.teamMatchesAsLoser.length;
+      const bMatches =
+        b.teamMatchesAsWinner.length + b.teamMatchesAsLoser.length;
+      return bMatches - aMatches;
+    })
+    .map((team) => ({
+      value: team.id,
+      label: `${team.players.map((p) => p.name).join(' & ')} (${team.teamMatchesAsWinner.length + team.teamMatchesAsLoser.length} kamper)${team.players.some((p) => p.inactive) ? ' ❌' : ''}`,
+    }));
 
   const numberOfWins = team ? team.teamMatchesAsWinner.length : 0;
   const numberOfLosses = team ? team.teamMatchesAsLoser.length : 0;

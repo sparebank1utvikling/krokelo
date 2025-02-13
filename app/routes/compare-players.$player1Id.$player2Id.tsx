@@ -27,10 +27,20 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   const player1 = players.find((player) => player.id === player1Id);
   const player2 = players.find((player) => player.id === player2Id);
 
-  const playerOptions = players.map((player) => ({
-    value: player.id,
-    label: player.name,
-  }));
+  const playerOptions = players
+    .sort((a, b) => {
+      // Sort inactive players to the bottom
+      if (a.inactive && !b.inactive) return 1;
+      if (!a.inactive && b.inactive) return -1;
+      // Then sort by number of games
+      const aGames = a.matchesAsWinner.length + a.matchesAsLoser.length;
+      const bGames = b.matchesAsWinner.length + b.matchesAsLoser.length;
+      return bGames - aGames;
+    })
+    .map((player) => ({
+      value: player.id,
+      label: `${player.name} (${player.matchesAsWinner.length + player.matchesAsLoser.length} kamper)${player.inactive ? ' ❌' : ''}`,
+    }));
 
   const player1WinStats =
     player1 && player2 ? findPlayerWinStats(player1, player2) : undefined;

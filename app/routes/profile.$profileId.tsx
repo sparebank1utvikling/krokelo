@@ -55,17 +55,31 @@ export default function Index() {
     .filter((player) => !player.inactive)
     .sort((p1, p2) => p2.currentTeamELO - p1.currentTeamELO);
 
-  const playerOptions = players.map((player) => ({
-    value: player.id,
-    label: player.name,
-  }));
+  const playerOptions = players
+    .sort((a, b) => {
+      // Sort inactive players to the bottom
+      if (a.inactive && !b.inactive) return 1;
+      if (!a.inactive && b.inactive) return -1;
+      // Then sort by number of games
+      const aGames = a.matchesAsWinner.length + a.matchesAsLoser.length;
+      const bGames = b.matchesAsWinner.length + b.matchesAsLoser.length;
+      return bGames - aGames;
+    })
+    .map((player) => ({
+      value: player.id,
+      label: `${player.name} (${player.matchesAsWinner.length + player.matchesAsLoser.length} kamper)${player.inactive ? ' ❌' : ''}`,
+    }));
 
   const numberOfWins = player ? player.matchesAsWinner.length : 0;
   const numberOfLosses = player ? player.matchesAsLoser.length : 0;
   const numberOfMatches = numberOfWins + numberOfLosses;
   const winPercentage = (numberOfWins / numberOfMatches) * 100;
 
-  const findLongestWinStreak = (eloLogs) => {
+  interface EloLog {
+    elo: number;
+  }
+
+  const findLongestWinStreak = (eloLogs: EloLog[]): number => {
     if (eloLogs.length === 0) return 0;
 
     const logs = [...eloLogs].reverse();
