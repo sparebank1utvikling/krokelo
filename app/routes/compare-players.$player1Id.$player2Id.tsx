@@ -81,7 +81,10 @@ const findMatchesBetweenPlayers = (
   player1: PlayerWithStats,
   player2: PlayerWithStats
 ) => {
-  const sortedLogs = [...player1.eloLogs].sort(
+  const player1SortedLogs = [...player1.eloLogs].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  const player2SortedLogs = [...player2.eloLogs].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
@@ -93,18 +96,28 @@ const findMatchesBetweenPlayers = (
     )
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .map((match) => {
-      const matchLog = sortedLogs.find((log) => log.matchId === match.id);
+      const player1MatchLog = player1SortedLogs.find(
+        (log) => log.matchId === match.id
+      );
+      const player2MatchLog = player2SortedLogs.find(
+        (log) => log.matchId === match.id
+      );
 
       let eloDiff = 0;
       let player1Elo = BASE_ELO;
       let player2Elo = BASE_ELO;
 
-      if (matchLog) {
-        const matchIndex = sortedLogs.indexOf(matchLog);
-        const previousElo =
-          matchIndex === 0 ? BASE_ELO : sortedLogs[matchIndex - 1].elo;
-        eloDiff = matchLog.elo - previousElo;
-        player1Elo = matchLog.elo;
+      if (player1MatchLog) {
+        const matchIndex = player1SortedLogs.indexOf(player1MatchLog);
+        player1Elo =
+          matchIndex === 0 ? BASE_ELO : player1SortedLogs[matchIndex - 1].elo;
+        eloDiff = player1MatchLog.elo - player1Elo;
+      }
+
+      if (player2MatchLog) {
+        const matchIndex = player2SortedLogs.indexOf(player2MatchLog);
+        player2Elo =
+          matchIndex === 0 ? BASE_ELO : player2SortedLogs[matchIndex - 1].elo;
       }
 
       return {
