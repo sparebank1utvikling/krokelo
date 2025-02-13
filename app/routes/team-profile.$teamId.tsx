@@ -5,6 +5,110 @@ import { getTeams } from '~/services/team-service';
 import { typedjson, useTypedLoaderData } from 'remix-typedjson';
 import Select from 'react-select';
 import { PageContainerStyling } from './team-duel';
+import { BASE_ELO } from '~/utils/constants';
+
+interface TeamMatch {
+  id: number;
+  date: Date;
+  winnerTeamId: number;
+  loserTeamId: number;
+}
+
+const calculateTeamMatchups = (
+  team: {
+    teamMatchesAsWinner: TeamMatch[];
+    teamMatchesAsLoser: TeamMatch[];
+    id: number;
+    TeamELOLog: { date: Date; elo: number; teamMatchId: number }[];
+  },
+  allTeams: { id: number; players: { name: string }[] }[]
+) => {
+  const opponents = new Map<
+    number,
+    {
+      eloDiff: number;
+      name: string;
+      matches: number;
+      wins: number;
+      losses: number;
+    }
+  >();
+
+  const sortedLogs = [...team.TeamELOLog].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  [...team.teamMatchesAsWinner, ...team.teamMatchesAsLoser].forEach((match) => {
+    const opponentId =
+      match.winnerTeamId === team.id ? match.loserTeamId : match.winnerTeamId;
+    const isWin = match.winnerTeamId === team.id;
+    const matchLog = sortedLogs.find((log) => log.teamMatchId === match.id);
+    if (!matchLog) return;
+
+    const matchIndex = sortedLogs.indexOf(matchLog);
+    const previousElo =
+      matchIndex === 0 ? BASE_ELO : sortedLogs[matchIndex - 1].elo;
+    const eloDiff = matchLog.elo - previousElo;
+
+    const current = opponents.get(opponentId) || {
+      eloDiff: 0,
+      matches: 0,
+      name: '',
+      wins: 0,
+      losses: 0,
+    };
+
+    opponents.set(opponentId, {
+      ...current,
+      eloDiff: current.eloDiff + eloDiff,
+      matches: current.matches + 1,
+      wins: current.wins + (isWin ? 1 : 0),
+      losses: current.losses + (isWin ? 0 : 1),
+    });
+  });
+
+  let bestMatchup = {
+    name: '',
+    eloDiff: -Infinity,
+    matches: 0,
+    wins: 0,
+    losses: 0,
+  };
+  let worstMatchup = {
+    name: '',
+    eloDiff: Infinity,
+    matches: 0,
+    wins: 0,
+    losses: 0,
+  };
+  let mostPlayedAgainst = {
+    name: '',
+    eloDiff: 0,
+    matches: 0,
+    wins: 0,
+    losses: 0,
+  };
+
+  opponents.forEach((stats, opponentId) => {
+    const opponent = allTeams.find((t) => t.id === opponentId);
+    if (!opponent) return;
+
+    stats.name = opponent.players.map((p) => p.name).join(' & ');
+    if (stats.matches >= 1) {
+      if (stats.eloDiff > bestMatchup.eloDiff) {
+        bestMatchup = stats;
+      }
+      if (stats.eloDiff < worstMatchup.eloDiff) {
+        worstMatchup = stats;
+      }
+      if (stats.matches > mostPlayedAgainst.matches) {
+        mostPlayedAgainst = stats;
+      }
+    }
+  });
+
+  return { bestMatchup, worstMatchup, mostPlayedAgainst };
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -59,6 +163,8 @@ export default function Index() {
   const numberOfMatches = numberOfWins + numberOfLosses;
   const winPercentage = (numberOfWins / numberOfMatches) * 100;
 
+  const matchups = team ? calculateTeamMatchups(team, teams) : null;
+
   return (
     <div className={PageContainerStyling}>
       <div className="flex justify-center py-4">
@@ -104,41 +210,117 @@ export default function Index() {
           </ul>
           <div className="flex flex-col justify-center">
             <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-              Lagspill Statistikk
+              Lagspill Statistikk 📊
             </h2>
-            <div className="grid grid-cols-4 gap-4 rounded-lg bg-white p-6 pr-8 shadow-lg dark:bg-gray-800">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {numberOfMatches}
+            <div className="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {numberOfMatches}
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Kamper
+                  </div>
                 </div>
-                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  Kamper
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {numberOfWins}
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Seiere
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                    {numberOfLosses}
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Tap
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {winPercentage.toFixed(1)}%
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Win Rate
+                  </div>
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {numberOfWins}
+              {matchups && matchups.bestMatchup.name && (
+                <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-gray-700">
+                  {matchups.bestMatchup.eloDiff > 0 && (
+                    <div className="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-700/50">
+                      <div className="mb-2 text-base font-semibold text-black dark:text-white">
+                        Beste motstander 🏆
+                      </div>
+                      <div className="mb-1 truncate text-xl font-bold text-black dark:text-white">
+                        {matchups.bestMatchup.name}
+                      </div>
+                      <div className="text-sm text-green-600 dark:text-green-400">
+                        <div>
+                          +{Math.round(matchups.bestMatchup.eloDiff)} ELO-poeng
+                        </div>
+                        <div className="text-black dark:text-white">
+                          Kamper: {matchups.bestMatchup.matches} (
+                          {matchups.bestMatchup.wins}-
+                          {matchups.bestMatchup.losses})
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {matchups.worstMatchup.eloDiff < 0 && (
+                    <div className="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-700/50">
+                      <div className="mb-2 text-base font-semibold text-black dark:text-white">
+                        Tøffeste motstander 💪
+                      </div>
+                      <div className="mb-1 truncate text-xl font-bold text-black dark:text-white">
+                        {matchups.worstMatchup.name}
+                      </div>
+                      <div className="text-sm text-red-600 dark:text-red-400">
+                        <div>
+                          {Math.round(matchups.worstMatchup.eloDiff)} ELO-poeng
+                        </div>
+                        <div className="text-black dark:text-white">
+                          Kamper: {matchups.worstMatchup.matches} (
+                          {matchups.worstMatchup.wins}-
+                          {matchups.worstMatchup.losses})
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-700/50">
+                    <div className="mb-2 text-base font-semibold text-black dark:text-white">
+                      Mest spilt mot 🎯
+                    </div>
+                    <div className="mb-1 truncate text-xl font-bold text-black dark:text-white">
+                      {matchups.mostPlayedAgainst.name}
+                    </div>
+                    <div className="text-sm">
+                      <span
+                        className={
+                          matchups.mostPlayedAgainst.eloDiff > 0
+                            ? 'text-green-600 dark:text-green-400'
+                            : matchups.mostPlayedAgainst.eloDiff < 0
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-blue-600 dark:text-blue-400'
+                        }
+                      >
+                        <div>
+                          {matchups.mostPlayedAgainst.eloDiff > 0 ? '+' : ''}
+                          {Math.round(matchups.mostPlayedAgainst.eloDiff)}{' '}
+                          ELO-poeng
+                        </div>
+                        <div className="text-black dark:text-white">
+                          Kamper: {matchups.mostPlayedAgainst.matches} (
+                          {matchups.mostPlayedAgainst.wins}-
+                          {matchups.mostPlayedAgainst.losses})
+                        </div>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  Seiere
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-red-600 dark:text-red-400">
-                  {numberOfLosses}
-                </div>
-                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  Tap
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {winPercentage ? winPercentage.toFixed(1) : 0}%
-                </div>
-                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  Win Rate
-                </div>
-              </div>
+              )}
             </div>
           </div>
           {team.TeamELOLog.length > 0 && (
