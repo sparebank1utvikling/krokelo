@@ -1,5 +1,5 @@
 import { useFetcher } from '@remix-run/react';
-import { getPlayers } from '~/services/player-service';
+import { getPlayers, PlayerWithMatches } from '~/services/player-service';
 import {
   getRecent1v1Matches,
   revertLatest1v1Match,
@@ -7,6 +7,7 @@ import {
 import { PageContainerStyling } from './team-duel';
 import { typedjson, useTypedLoaderData } from 'remix-typedjson';
 import { BASE_ELO } from '~/utils/constants';
+import { TrendArrow } from '~/components/TrendArrow';
 
 export const loader = async () => {
   const players = await getPlayers();
@@ -31,6 +32,29 @@ const getRowHighlightClass = (idx: number, matchDate: Date) =>
   isLatestMatch(idx) && isMatchLessThan5MinutesOld(matchDate)
     ? 'bg-slate-100 dark:bg-gray-700'
     : '';
+
+const calculatePlayerTrend = (player: PlayerWithMatches) => {
+  if (!player.eloLogs?.length) return 0;
+
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+  const sortedLogs = [...player.eloLogs].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  const recentLogs = sortedLogs.filter(
+    (log) => new Date(log.date) > twoWeeksAgo
+  );
+  if (recentLogs.length === 0) return 0;
+
+  const currentElo = recentLogs[0].elo;
+  const twoWeeksAgoElo =
+    sortedLogs.find((log) => new Date(log.date) <= twoWeeksAgo)?.elo ??
+    BASE_ELO;
+
+  return currentElo - twoWeeksAgoElo;
+};
 
 export default function Index() {
   const fetcher = useFetcher();
@@ -114,10 +138,21 @@ export default function Index() {
         <table className="min-w-full">
           <thead>
             <tr>
-              <th className="w-2/5 py-2 dark:text-white">Navn</th>
-              <th className="w-1/5 py-2 dark:text-white">Seiere (&#128293;)</th>
-              <th className="w-1/5 py-2 dark:text-white">Tap</th>
-              <th className="w-1/5 py-2 dark:text-white">ELO</th>
+              <th className="w-[35%] whitespace-nowrap px-3 py-2 text-center dark:text-white">
+                Navn
+              </th>
+              <th className="w-[18%] whitespace-nowrap px-3 py-2 text-center dark:text-white">
+                Seiere (&#128293;)
+              </th>
+              <th className="w-[15%] px-3 py-2 text-center dark:text-white">
+                Tap
+              </th>
+              <th className="w-[17%] px-3 py-2 text-center dark:text-white">
+                ELO
+              </th>
+              <th className="w-[15%] py-2 pr-4 text-center dark:text-white">
+                Trend
+              </th>
             </tr>
           </thead>
 
@@ -133,28 +168,35 @@ export default function Index() {
                   key={player.id}
                   className="border-t text-lg dark:border-gray-700"
                 >
-                  <td className="py-2 font-semibold dark:text-white">
+                  <td className="px-3 py-2 font-semibold dark:text-white">
                     {player.name}
                   </td>
-                  <td className="py-2 dark:text-white">
+                  <td className="px-3 py-2 text-center dark:text-white">
                     {`${player.matchesAsWinner.length}` +
                       (player.winStreak > 0 ? ` (${player.winStreak})` : '')}
                   </td>
-                  <td className="py-2 dark:text-white">
+                  <td className="px-3 py-2 text-center dark:text-white">
                     {player.matchesAsLoser.length}
                   </td>
-                  <td className="py-2 dark:text-white">{player.currentELO}</td>
+                  <td className="px-3 py-2 text-center dark:text-white">
+                    {player.currentELO}
+                  </td>
+                  <td className="py-2 pr-4 text-center">
+                    {player.matchesAsWinner.length +
+                      player.matchesAsLoser.length >
+                      0 && <TrendArrow trend={calculatePlayerTrend(player)} />}
+                  </td>
                 </tr>
               ))}
           </tbody>
           <tbody>
             <tr>
-              <th colSpan={4} scope="col" className="py-4">
+              <th colSpan={5} scope="col" className="py-8 pt-12 text-center">
                 <span className="text-xl font-bold md:text-2xl dark:text-white">
                   Spillere med få kamper
                 </span>
-                <div>
-                  <span className="pl-2 text-sm dark:text-gray-400">
+                <div className="text-center">
+                  <span className="text-sm dark:text-gray-400">
                     (Mindre enn 5 kamper spilt)
                   </span>
                 </div>
@@ -171,31 +213,39 @@ export default function Index() {
                   key={player.id}
                   className="border-t text-lg dark:border-gray-700"
                 >
-                  <td className="py-2 font-semibold dark:text-white">
+                  <td className="px-3 py-2 text-center font-semibold dark:text-white">
                     {player.name}
                   </td>
-                  <td className="py-2 dark:text-white">
+                  <td className="px-3 py-2 text-center dark:text-white">
                     {`${player.matchesAsWinner.length}` +
                       (player.winStreak > 0 ? ` (${player.winStreak})` : '')}
                   </td>
-                  <td className="py-2 dark:text-white">
+                  <td className="px-3 py-2 text-center dark:text-white">
                     {player.matchesAsLoser.length}
                   </td>
-                  <td></td>
+                  <td className="px-3 py-2 text-center dark:text-white">
+                    {player.currentELO}
+                  </td>
+                  <td className="py-2 pr-4"></td>
                 </tr>
               ))}
           </tbody>
         </table>
-        <h2 className="mb-3 text-xl font-bold md:text-2xl dark:text-white">
+        <h2 className="mb-3 mt-12 text-xl font-bold md:text-2xl dark:text-white">
           Inaktive spillere
         </h2>
         <table className="min-w-full">
           <thead>
             <tr>
-              <th className="w-2/5 py-2 dark:text-white">Navn</th>
-              <th className="w-1/5 py-2 dark:text-white">Seiere</th>
-              <th className="w-1/5 py-2 dark:text-white">Tap</th>
-              <th className="w-1/5 py-2 dark:text-white">ELO</th>
+              <th className="w-1/3 px-4 py-2 text-center dark:text-white">
+                Navn
+              </th>
+              <th className="w-1/3 px-4 py-2 text-center dark:text-white">
+                Seiere
+              </th>
+              <th className="w-1/3 py-2 pr-6 text-center dark:text-white">
+                Tap
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -206,16 +256,18 @@ export default function Index() {
                   key={player.id}
                   className="border-t text-lg dark:border-gray-700"
                 >
-                  <td className="py-2 font-semibold dark:text-white">
+                  <td className="px-3 py-2 pr-6 font-semibold dark:text-white">
                     {player.name}
                   </td>
-                  <td className="py-2 dark:text-white">
+                  <td className="px-3 py-2 pr-6 text-center dark:text-white">
                     {`${player.matchesAsWinner.length}`}
                   </td>
-                  <td className="py-2 dark:text-white">
+                  <td className="px-3 py-2 pr-6 text-center dark:text-white">
                     {player.matchesAsLoser.length}
                   </td>
-                  <td className="py-2 dark:text-white">{player.currentELO}</td>
+                  <td className="px-3 py-2 pr-6 text-center dark:text-white">
+                    {player.currentELO}
+                  </td>
                 </tr>
               ))}
           </tbody>
