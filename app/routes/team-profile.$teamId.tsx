@@ -89,32 +89,43 @@ export default function Index() {
             </li>
           </ul>
           <div className="flex flex-col justify-center">
-            <h2 className="mb-2 text-xl font-bold dark:text-green-200">
-              Lagspill
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+              Lagspill Statistikk
             </h2>
-            <table
-              className="mb-2 table-auto rounded-lg bg-blue-100
-             p-4 text-lg text-black shadow-lg dark:bg-gray-700 dark:text-white"
-            >
-              <thead>
-                <tr className="text-md">
-                  <th className="w-1/5 py-2"># kamper</th>
-                  <th className="w-1/5 py-2"># seiere</th>
-                  <th className="w-1/5 py-2"># tap</th>
-                  <th className="w-2/5 py-2">% overlegenhet</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="text-md">
-                  <td className="border py-2">{numberOfMatches}</td>
-                  <td className="border py-2">{numberOfWins}</td>
-                  <td className="border py-2">{numberOfLosses}</td>
-                  <td className="border py-2">
-                    {`${winPercentage ? winPercentage.toFixed(2) : 0} %`}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="grid grid-cols-4 gap-4 rounded-lg bg-white p-6 pr-8 shadow-lg dark:bg-gray-800">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {numberOfMatches}
+                </div>
+                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Kamper
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {numberOfWins}
+                </div>
+                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Seiere
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                  {numberOfLosses}
+                </div>
+                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Tap
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {winPercentage ? winPercentage.toFixed(1) : 0}%
+                </div>
+                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Win Rate
+                </div>
+              </div>
+            </div>
           </div>
           {team.TeamELOLog.length > 0 && (
             <>
