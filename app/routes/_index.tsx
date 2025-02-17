@@ -51,7 +51,7 @@ export default function Index() {
             1v1
           </span>
           <img
-            src="img/1v1krok.png"
+            src="img/1v1krok-cat.png"
             alt="1v1"
             className="w-1/2 rounded md:w-full"
           />
@@ -64,7 +64,7 @@ export default function Index() {
             2v2
           </span>
           <img
-            src="img/2v2krok.png"
+            src="img/2v2krok-cat.png"
             alt="2v2"
             className="w-1/2 rounded md:w-full"
           />

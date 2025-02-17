@@ -131,7 +131,7 @@ export default function Index() {
       </h1>
       <div>
         <div className="flex justify-center p-4">
-          <img src="img/1v1krok.png" alt="1v1" className="w-1/3 rounded" />
+          <img src="img/1v1krok-cat.png" alt="1v1" className="w-1/3 rounded" />
         </div>
         <Form method="post" onSubmit={handleSubmit}>
           <div className="grid grid-cols-12 gap-4 py-4">
