@@ -22,9 +22,9 @@ COOKIE_SECRET="s3cr3ts3cr3t"
 ### Start app in development mode
 
 ```sh
-npm install             # Install dependencies
-npm run setup:db        # Setup Prisma and migrate database
-npm run dev             # Start app in dev mode with hot reload
+npm ci --ignore-scripts     # Install dependencies
+npm run setup:db            # Setup Prisma and migrate database
+npm run dev                 # Start app in dev mode with hot reload
 ```
 
 ### (Optional) Use prod data in local dev
