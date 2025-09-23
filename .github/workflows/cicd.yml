@@ -2,6 +2,7 @@ name: Continuous Integration and Continuous Delivery
 
 on:
   push:
+  workflow_dispatch:
 
 permissions:
   id-token: write
