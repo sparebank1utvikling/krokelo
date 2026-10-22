@@ -1,3 +1,8 @@
+# Oppdatering 22.10.2026
+Pga. lite bruk har Krokelo blitt lagt ned. Takk til alle som har brukt tjenesten! 
+
+Har tatt en backup av prod database (db_backups/22oct2026.dump) som kan brukes hvis tjenesten skal gjenoppstå senere.
+
 # Welcome to [Krokelo](https://krokelo.sb1u.no/)!
 
 Krokelo is a web application created to track [Crocinole](https://en.wikipedia.org/wiki/Crokinole) games at SpareBank 1 Utvikling. You can submit duel games (1 vs 1) and team games (2 vs 2), and the application will calculate [Elo ratings](https://en.wikipedia.org/wiki/Elo_rating_system) for players and teams. Leaderboard and profile pages shows the current stats.
